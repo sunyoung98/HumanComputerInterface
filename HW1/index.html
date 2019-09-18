@@ -1,0 +1,692 @@
+ <html>
+<head>
+    <title>Ugly calculator using JQuery and math.js</title>
+        <style type='text/css'>
+        body {
+            margin: 0px 0px 0px 0px;
+        }
+       
+        #calculator {
+            margin-top: 50px;
+            font-size: 0;
+            width: 340px;
+            background-color: #F1CBCB;
+            padding: 20px;
+            margin-left:100px;
+            border-radius: 10px;
+        }
+       
+        #result {
+            width: 330px;
+            height: 35px;
+            margin-bottom: 0px;
+            padding: 0px 5px 0px 5px;
+            background-color: white;
+            border-radius: 5px;
+            display: inline-flex;
+            justify-content: flex-end;
+            align-items: center;
+            overflow: hidden;
+            box-shadow: inset 0 0px 3px;
+            font: 20px digital;
+        }
+        #hiddenbar{
+            width:340px;
+            height:20px;
+            background-color: #F1CBCB;
+        }
+        #latex {
+            width: 330px;
+            height: 100px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 0px 5px 0px 5px;
+            background-color: white;
+            border-radius: 5px;
+            display: inline-flex;
+            justify-content: flex-end;
+            align-items: center;
+            overflow: hidden;
+            box-shadow: inset 0 0px 3px;
+            font: 20px digital;          
+        }
+        .key {
+            width: 60px;
+            height: 20px;
+            background-color: #E6BCBC;
+            display: inline-flex;
+            margin: 3px 5px 8px 0px;
+            vertical-align: middle;
+            justify-content: center;
+            align-items: center;
+            padding: 5px 0px 5px 0px;
+            border-radius: 4px;
+            cursor: pointer;
+            font: bold 15px sans-serif;
+        }
+        .hid {
+            display: none;
+            padding: 0px 30px 0px 30px;
+        }
+        .mkey {
+            width: 50px;
+            height: 15px;
+            background-color: #E7A1A1; 
+        }
+        .copy {
+            height: 20px;
+            display: inline-flex;
+            margin: 3px 5px 8px 0px;
+            vertical-align: middle;
+            justify-content: center;
+            align-items: center;
+            padding: 5px 0px 5px 0px;
+            border-radius: 4px;
+            cursor: pointer;
+            font: bold 15px sans-serif;
+            width:80px;
+            background-color:#D98686;
+        }
+        .paste {
+            height: 20px;
+            display: inline-flex;
+            margin: 3px 5px 8px 0px;
+            vertical-align: middle;
+            justify-content: center;
+            align-items: center;
+            padding: 5px 0px 5px 0px;
+            border-radius: 4px;
+            cursor: pointer;
+            font: bold 15px sans-serif;
+            width:80px;
+            background-color:#D98686;
+        }
+        .small-key {
+            width:30px;
+        }
+        .big-key {
+            width: 75px;
+            height: 20px;
+            background-color: #E6BCBC;
+            display: inline-flex;
+            margin: 3px 5px 8px 0px;
+            vertical-align: middle;
+            justify-content: center;
+            align-items: center;
+            padding: 5px 0px 5px 0px;
+            border-radius: 4px;
+            cursor: pointer;
+            font: bold 15px sans-serif;
+        }
+        table{
+            display: none;
+            background-color:white;
+            }
+        td{
+            padding: 10px;
+            border: 1px solid black;
+        }
+    </style>
+ 
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js' type='text/javascript'></script>
+    <script src='math.js' type='text/javascript'></script>
+
+    <script type='text/javascript' async
+        src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML'>
+    </script>  
+
+    <script type='text/x-mathjax-config'>
+        MathJax.Hub.Config({
+          'HTML-CSS': { scale: 75}
+        });
+    </script>
+    <script>
+        function eval(){
+            var hclass2='res';
+            status=0;
+            hclass2+=String(hiindex);
+            try{
+                displayValue = parser.eval(displayValue).toString();
+                var tokens = displayValue.split(' ');
+                if(tokens[0] == 'function'){
+                    displayValue = tokens[0];
+                }
+                $('#result').text(displayValue);
+                $('.'+hclass2).text(displayValue);
+                displayValue = '0';
+            }catch (e){
+                displayValue = '0';
+                $('.'+hclass2).text(displayValue);
+                if(displayValue != 'function'){
+                    $('#result').text('제대로 된 식을 입력하세요.');}
+                }
+        }
+       function vector(input){
+           status=2;
+           var num=(Number)(displayValue);
+           if(input=='vector*' && num>=2){
+               index=2;
+               var num=(Number)(displayValue);
+               displayValue='([';
+               for(var i=1; i<num; i++)
+                   displayValue+=',';
+               displayValue+=']';
+               displayValue+='*[';
+               for(var i=1; i<num; i++)
+                   displayValue+=',';
+               displayValue+='])';
+           }
+           else if(input=='cross'){
+               index=7;
+               displayValue="cross([,,],[,,])";
+           }
+           $('#result').text(displayValue);
+           $('#latex').text(displayValue);
+           status=2;
+       }
+       function matrix(input){
+           var num=displayValue.split(',');
+           num[0]=(Number)(num[0]);
+           num[1]=(Number)(num[1]);
+           if(num[0]!=null && num[1]!=null){
+               status=2;
+           if(input=="det"||input=='inv'){
+               displayValue=input;
+               index=6;
+               displayValue+='([';
+               for(var i=0; i<num[0]; i++){
+                   displayValue+='[';
+                   for(var j=1; j<num[1]; j++){
+                       displayValue+=',';
+                   }
+                   displayValue+='],';
+               }
+               displayValue=displayValue.substring(0,displayValue.length-1);
+               displayValue+='])';
+           }
+           else{
+               index=3;
+               displayValue='(';
+               for(var k=0; k<2; k++){
+               displayValue+='[';
+               for(var i=0; i<num[0]; i++){
+                   displayValue+='[';
+                   for(var j=1; j<num[1]; j++){
+                       displayValue+=',';
+                   }
+                   displayValue+='],';
+               }
+               displayValue=displayValue.substring(0,displayValue.length-1);
+               displayValue+=']';
+               displayValue+='*';
+           }
+             displayValue=displayValue.substring(0,displayValue.length-1);
+             displayValue+=')';
+           }
+           $('#result').text(displayValue);
+           $('#latex').text(displayValue);
+       }
+       }
+       function operator(input){
+           if(input == 'CL'){
+                displayValue = '0';
+            }
+           else if(input=='AC'){
+               var hclass1='his';
+               var hclass2='res';
+               for(var i=0; i<10; i++){
+                hclass1+=String(i);
+                hclass2+=String(i);
+                $('.'+hclass1).text('');
+                $('.'+hclass2).text('');
+               }
+               displayValue='0';
+               status=0;
+           }
+            else if(input=='←'){
+                if(status==0){
+                if(displayValue.length>1){
+                    displayValue=displayValue.substring(0, (displayValue.length)-1);
+                }
+                else{
+                    displayValue='0';
+                }
+                }
+                else if(status==2){
+                    var text=displayValue.substring(index,displayValue.length);
+                    displayValue=displayValue.substring(0,index-1);
+                    displayValue+=text;
+                    index--;
+                }
+            }
+            else if(input=='n!'){
+                if(status==2){
+                   var text=displayValue.substring(index,displayValue.length);
+            displayValue=displayValue.substring(0,index);
+            displayValue+=input;
+            displayValue+=text;
+            index++; 
+                }
+                else
+                displayValue+='!';
+            }
+            else if(input=='f(x)'){
+                if(status==2){
+                     var text=displayValue.substring(index,displayValue.length);
+            displayValue=displayValue.substring(0,index);
+            displayValue+=input;
+            displayValue+=text;
+            index+=input.length;  
+                }
+                else
+                displayValue+='f(';
+            }
+            else if(input=='g(x)'){
+                if(status==2){
+                     var text=displayValue.substring(index,displayValue.length);
+            displayValue=displayValue.substring(0,index);
+            displayValue+=input;
+            displayValue+=text;
+            index+=input.length; 
+                }
+                else
+                displayValue+='g(';
+            }
+            else{
+                if(status==2){
+                     var text=displayValue.substring(index,displayValue.length);
+            displayValue=displayValue.substring(0,index);
+            displayValue+=input;
+            displayValue+=text;
+            index+=input.length; 
+                }
+                else
+                displayValue += input;
+                $('#result').text(displayValue);
+            }
+            $('#result').text(displayValue);
+            $('#latex').text(displayValue);
+            var node = math.parse(displayValue);
+            var latex = node.toTex({parenthesis: 'keep', implicit: 'hide'});
+            var elem = MathJax.Hub.getAllJax('latex')[0];
+            MathJax.Hub.Queue(['Text', elem, latex]);
+       }
+      function indexfunc(){
+        if(index>displayValue.length)
+            index=displayValue.length;
+        else{
+         if(displayValue[index]==']'){
+             if(displayValue[index+1]=='c')
+                 index+=7;
+             else if(displayValue[index+1]==']')
+                 index+=5;
+             else
+                index+=3;
+         }
+            else
+                index++;
+        }
+      }
+      function totalcalc(input){
+        if(displayValue == '0')
+            displayValue = '';
+        else if(input=='▶');
+        else if(input == 'EV'){
+            var hclass1='his';
+            hclass1+=String(hiindex);
+            $('.'+hclass1).text(displayValue);
+            eval();
+            hiindex=(hiindex+1)%10;
+        }
+        else if(input=='cross'||input=='vector*')
+            vector(input);
+        else if(input=='inv'||input=='det'||input=='matrix*')
+            matrix(input);
+        else
+            operator(input);
+        
+      }
+    function vm(input){
+        if(input=='▶')
+            indexfunc();
+        else
+            totalcalc(input);
+            
+    }
+      function information(input){
+            $('#result').text(input);
+        switch(input){
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                displayValue='숫자를 나타냅니다.';
+                break;
+            case '*':
+            case '+':
+            case '-':
+            case '/':
+                displayValue='사칙연산을 해줍니다.';
+                break;
+            case '%':
+                displayValue='나머지를 구해줍니다.';
+                break;
+            case 'tan':
+            case 'sin':
+            case 'cos':
+                displayValue='삼각함수를 나타냅니다 각도 deg와 같이 사용하세요.';
+                break;
+            case '>':
+            case '<':
+            case '<=':
+            case '==':
+            case '!=':
+            case '>=':
+            case '=':
+                displayValue='부등호의 참,거짓을 반환합니다';
+                break;
+            case '[':
+            case ']':
+            case '(':
+            case ')':
+                displayValue='괄호를 나타냅니다.';
+                break;
+            case 'e':
+                displayValue='자연상수 e를 나타냅니다.';
+                break;
+            case 'pi':
+                displayValue='원주율 pi를 나타냅니다.';
+                break;
+            case 'sqrt':
+                displayValue='제곱근을 나타냅니다(루트)';
+                break;
+            case '^':
+                displayValue='제곱을 나타냅니다.';
+                break;
+            case 'n!':
+                displayValue='팩토리얼을 나타냅니다.';
+                break;
+            case 'copy':
+                displayValue='지정한 영역만큼 복사해줍니다.';
+                break;
+            case 'paste':
+                displayValue='복사한 영역을 붙여넣기 해줍니다.';
+                break;
+            case 'i':
+                displayValue='제곱하여 -1이 되는 허수 i를 나타냅니다.';
+                break;
+            case 'exp':
+                displayValue='e의 x제곱을 계산해줍니다.';
+                break;
+            case 'x,y,z':
+                displayValue='변수를 사용할 수 있습니다.';
+                break;
+            case 'f(x),g(x)':
+                displayValue='함수를 사용할 수 있습니다.';
+                break;
+            case 'deg':
+                displayValue='각도를 나타냅니다.';
+                break;
+            case 'det':
+                displayValue='행렬식을 계산하여 ans에 저장합니다.';
+                break;
+            case 'inv':
+                displayValue='역함수를 나타냅니다. inv를 누르고 sin을 누르면 arcsin과 같습니다.';
+                break;
+            case 'cross':
+                displayValue='벡터를 나타냅니다.';
+                break;
+            case '▶':
+                displayValue='백터나 행렬을 계산할때, 다음 인덱스에 값을 입력할 수 있도록 해줍니다.';
+                break;
+            case 'CL':
+                displayValue='화면을 지워줍니다.';
+                break;
+            case '.':
+                displayValue='소수점을 나타냅니다.';
+                break;
+            case ',':
+                displayValue='여러 인자를 구분짓습니다.';
+                break;
+            case '←':
+                displayValue='바로 앞의 입력을 지웁니다.';
+                break;
+            case 'AC':
+                displayValue='히스토리까지 지웁니다.';
+                break;
+            case 'EV':
+                displayValue='계산을 합니다.';
+                break;
+            case 'log':
+                displayValue='log함수를 나타냅니다.';
+                break;
+            case '!':
+                displayValue='도움말이 필요한 키를 눌러보세요';
+                break;
+            case 'x,y,z':
+                displayValue='변수를 나타냅니다.';
+                break;
+            case 'f(x),g(x)':
+                displayValue='함수를 나타냅니다. 함수를 정의하고 난 후에 f(1)이런 값을 계산할 수 있습니다.';
+                break;
+            case 'vector':
+                displayValue='백터의 내적 외적을 계산해줍니다. vector*를 사용하려면 먼저 몇차원인지를 입력해야하며, cross는 3차원만 지원하므로 그냥 눌러도 됩니다.';
+                break;
+            case 'matrix':
+                displayValue='행렬을 계산해줍니다. mxn 꼴의 행렬을 계산할 경우 m,n을 입력하고 matrix 함수를 눌러줘야합니다.';
+                break;
+            case 'close':
+                $('.history').hide();
+                displayValue='히스토리를 닫습니다.';
+                break;
+            case 'history':
+                $('.history').css({
+                        'top': '70px',
+                        'left': '450px',
+                        'position':'absolute'
+                    }).show();
+                displayValue='최근 사용자가 계산했던 계산식과 결과를 10개까지 저장해서 보여줍니다.';
+                break;
+            
+        }
+          $('#latex').text(displayValue);
+      }
+    </script>
+    <script type='text/javascript'>
+        var parser = math.parser();
+        var displayValue = '0';
+        var lastvalue='';
+        var status=0;
+        var txt='';
+        var hiindex=0;
+        var index=0;
+        $(document).ready(function(){
+            $('#result').text(displayValue);
+            $('#latex').html('$$' + math.parse(displayValue).toTex() + '$$');
+            $('.key.hid').each(function(){ 
+            $(this).mouseup(function(e){
+                totalcalc($(this).text());
+                })
+             });
+            $('.big-key').each(function(index, key){ 
+            $(this).mousedown(function(e){
+                if(status==0){
+                if($(this).text()=='x,y,z')
+                    $('.operand').show();
+                else if($(this).text()=='vector')
+                    $('.vector').show();
+                else if($(this).text()=='matrix'){
+                    $('.matrix').show();}
+                else
+                    $('.function').show();
+                }
+                if(status==1)
+                    information($(this).text());
+                })
+             });
+            $('.help.key').each(function(index, key){
+                $(this).click(function(e){
+                if($(this).text()=='?'){
+                    status=1;
+                    $(this).text('!');   
+                    $('#latex').text('도움말 사용법을 알고싶은 키를 입력하세요');   
+                }
+                else{
+                    $(this).text('?');
+                    status=0;
+                    displayValue='0';
+                    $('#result').text(displayValue);
+                    $('#latex').text(displayValue);  
+                }
+                })
+            });
+            $(this).mouseup(function(){
+                $('.hid').hide();
+            });
+            $('.key').each(function(index, key){  
+                $(this).click(function(e){
+                    if(status==0){
+                    if($(this).text()=='history'){
+                        $('.history').css({
+                        'top': '70px',
+                        'left': '450px',
+                        'position':'absolute'
+                    }).show();
+                        $(this).text('close');
+                    }
+                    else if($(this).text()=='close'){
+                        $('.history').hide();
+                        $(this).text('history');
+                    }
+                    else
+                        totalcalc($(this).text());
+                    }
+                    else if(status==1)
+                        information($(this).text());
+                    else if(status==2)
+                        vm($(this).text());
+                })
+            });
+            
+            $('.copy').click(function(){
+            if(status==0){    
+              txt=window.getSelection().toString();
+              window.getSelection().empty();
+            }
+            else
+                  information($(this).text());
+            });
+            $('.paste').click(function(){
+              if(status==0){
+              if(txt!=null){
+                  if(displayValue=='0')
+                      displayValue=txt;
+                  else
+                  displayValue+=txt;
+                  $('#result').text(displayValue);
+                  $('#latex').text(displayValue);
+              }}
+              else
+                  information($(this).text());
+            });
+            
+        })
+    </script>
+</head>
+ 
+<body>
+    <div id='calculator'>
+        <table class='history' input type='text'>
+            <tr><td class='his0'></td><td class='res0'></td></tr>
+            <tr><td class='his1'></td><td class='res1'></td></tr>
+            <tr><td class='his2'></td><td class='res2'></td></tr>
+            <tr><td class='his3'></td><td class='res3'></td></tr>
+            <tr><td class='his4'></td><td class='res4'></td></tr>
+            <tr><td class='his5'></td><td class='res5'></td></tr>
+            <tr><td class='his6'></td><td class='res6'></td></tr>
+            <tr><td class='his7'></td><td class='res7'></td></tr>
+            <tr><td class='his8'></td><td class='res8'></td></tr>
+            <tr><td class='his9'></td><td class='res9'></td></tr>
+            </table>
+        <div id='result' input type='text'></div>
+        <center onselectstart='return false'>
+        <div id='hiddenbar'>
+        <span class='operand key hid'>x</span>
+        <span class='operand key hid'>y</span>
+        <span class='operand key hid'>z</span>   
+        <span class='function key hid'>f(x)</span>
+        <span class='function key hid'>g(x)</span>
+        <span class='vector key hid'>vector*</span>
+        <span class='vector key hid'>cross</span>
+        <span class='matrix key hid'>inv</span>
+        <span class='matrix key hid'>det</span>
+        <span class='matrix key hid'>matrix*</span>
+        </div>
+        <span class='big-key'>x,y,z</span>
+        <span class='big-key'>f(x),g(x)</span>
+        <span class='big-key'>vector</span>
+        <span class='big-key'>matrix</span>
+        <center>
+        <span class='copy'>copy</span>
+        <span class='paste'>paste</span>
+        <span class='help key'>?</span>
+        <span class='key'>history</span>
+        </center>
+        <center>
+        <span class='key mkey'>></span>
+        <span class='key mkey'><</span>
+        <span class='key mkey'><=</span>
+        <span class='key mkey'>=</span>
+        <span class='key mkey'>==</span>
+        <span class='key mkey'>!=</span>
+        <span class='key mkey'>>=</span>
+        <span class='key mkey'>i</span>
+        <span class='key mkey'>n!</span>
+        <span class='key mkey'>exp</span>
+        <span class='key mkey'>sin</span>
+        <span class='key mkey'>cos</span>
+        <span class='key mkey'>tan</span>
+        <span class='key mkey'>deg</span>
+        <span class='key mkey'>log</span>
+        <span class='key mkey'>pi</span>
+        <span class='key mkey'>[</span>
+        <span class='key mkey'>]</span>
+        <span class='key mkey'>e</span>
+        <span class='key mkey'>sqrt</span>
+        <span class='key mkey'>^</span>
+        <span class='key mkey'>(</span>
+        <span class='key mkey'>)</span>
+        <span class='key'>▶</span>
+            </center>
+        <span class='key'>7</span>
+        <span class='key'>8</span>
+        <span class='key'>9</span>
+        <span class='key'>%</span>
+        <span class='key'>CL</span>
+        <span class='key'>4</span>
+        <span class='key'>5</span>
+        <span class='key'>6</span>
+        <span class='key'>*</span>
+        <span class='key'>/</span>
+        <span class='key'>1</span>
+        <span class='key'>2</span>
+        <span class='key'>3</span>
+        <span class='key'>+</span>
+        <span class='key'>-</span>
+        <span class='key'>0</span>
+        <span class='key small-key'>.</span>
+        <span class='key small-key'>,</span>
+        <span class='key'>←</span>
+        <span class='key'>AC</span>
+        <span class='key'>EV</span>
+        <div id='latex'></div>
+        </center>
+    </div>
+    
+</body>
+</html>

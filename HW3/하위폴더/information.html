@@ -1,0 +1,58 @@
+<html>
+<head>
+        <title>informaiton frame</title>
+    <style type="text/css">
+        .key{
+            width: 18%;
+            height: 35px;
+            background: #FF6D70;
+            display: inline-flex;
+            vertical-align: middle;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font: bold 100% sans-serif;
+            border-width: 2px;
+            border-style: outset;
+            border-color: #ff9ea0;
+            border-image: initial;
+            color: white;
+            border-radius: 6px;
+        }
+        .small{
+            width:5%;
+            background-color: #ff9ea0;
+        }
+    </style>
+<script src="http://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script>
+    function help_click(){
+      if( $("#help").html() == "도움말" ) {
+        $("#main_frame").attr("src","https://mathjs.org/docs/reference/functions");
+        $("#help").html('도움말 닫기');
+        $(".hiddenmenu").show();
+      }
+        else{
+             $("#main_frame").attr("src","");
+            $("#help").html('도움말');
+            $(".hiddenmenu").hide();
+        }
+    }
+    function back_click(){
+        history.back();
+    }
+    function forward_click(){
+        history.forward();
+    }
+    </script>
+</head>
+<body>
+    <div id="menu">
+    <button id="help" class="key" onclick="help_click();">도움말</button>
+    <button id="back" class="key hiddenmenu small" onclick="back_click()" style="display:none" >◀</button>
+    <button id="back" class="key hiddenmenu small" onclick="forward_click()" style="display:none">▶</button>
+        </div>
+    <iframe width="100%" height="100%" frameborder="0" border="0" scrolling="yes" bgcolor=#EEEEEE bordercolor="#FF000000" marginwidth="0" marginheight="0" name="main_frame" id="main_frame" ></iframe>
+
+</body>
+</html>

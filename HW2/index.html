@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="ko">
+<head>
+	<meta charset="utf-8" />
+	<title>Direct Manipulation of Math Symbols</title>
+</head>
+
+<body>
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js' type='text/javascript'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/2.4.6/fabric.min.js" type="text/javascript"></script>
+    <script type='text/javascript' async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML'>
+    </script>
+    <script src="math.min.js" type="text/javascript"></script>
+
+    <canvas id="c" width="1024" height="708">
+        Canvas not supported
+    </canvas>
+    <script>
+        const parser = math.parser();
+
+        const SYMBOL_WIDTH = 50;
+        const SYMBOL_HEIGHT = 50;
+
+        let MathApp = {};
+        let copybuffer="det([1,3,5],[1,3,5],[2,3,2])";
+        MathApp.symbol_paths = {
+                '+':    "add",
+                '-':    "sub",
+                '*':    "mul",
+                '/':    "div",
+                '(':    "parenthesis_open",
+                ')':    "parenthesis_close",
+                '[':    "squarebracket_open",
+                ']':    "squarebracket_close",
+                '{':    "curlybrace_open",
+                '}':    "curlybrace_close",
+                '.':    "period",
+                ',':    "comma",
+                ':':    "colon",
+                ';':    "semicolon",
+                '=':    "equal",
+                '>':    "more",
+                '<':    "less",
+                '!':    "exclamation"
+        };
+
+        MathApp.blocks = [];
+        MathApp.selected_block = null;
+
+        MathApp.is_mouse_dragging = false;       
+        MathApp.mouse_drag_prev = {x:0, y:0};
+
+        MathApp.block_types = {
+            UNDEFINED:  "undefind",
+            SYMBOL:     "symbol",
+        };
+        MathApp.initialize = function() {
+            for(let i=0; i <= 9; i++)
+            {
+                let key = i.toString();
+                let value = key;
+                this.symbol_paths[key] = value;
+            }
+
+            for(let c="a".charCodeAt(0); c <= "z".charCodeAt(0); c++)
+            {
+                let key = String.fromCharCode(c);
+                let value = key;
+                this.symbol_paths[key] = value;
+            }
+
+            this.canvas = new fabric.Canvas("c", {
+                backgroundColor: "#eee",
+                hoverCursor: "default",
+                selection: false
+            });
+            $(document).bind('copy',function(e){
+                MathApp.handleKeyPress("copy");
+            });
+            $(document).bind('paste',function(e){
+                MathApp.handleKeyPress("paste");
+            });
+            $(document).bind('cut',function(e){
+                MathApp.handleKeyPress("delete");
+            });
+            $(document).keypress(function(event) {
+                if(event.which==13){
+                    MathApp.handleKeyPress("enter");
+                    }
+                else if(event.which==32){
+                    MathApp.handleKeyPress("split");
+                }
+                else{
+                    let key = String.fromCharCode(event.which);
+                    MathApp.handleKeyPress(key);}
+            });
+            $(document).mousedown(function(event) {
+                let p = {x: event.pageX, y: event.pageY};
+                MathApp.handleMouseDown(p);
+            });
+            $(document).mouseup(function(event) {
+                let p = {x: event.pageX, y: event.pageY};
+                MathApp.handleMouseUp(p);
+            });
+            $(document).mousemove(function(event) {
+                let p = {x: event.pageX, y: event.pageY};
+                MathApp.handleMouseMove(p);
+            });
+        }
+
+        MathApp.handleKeyPress = function(key) {
+            if (key=="copy"){
+                if(MathApp.selected_block!=null)
+                    copybuffer=MathApp.selected_block.name;
+            }
+            else if(key=="enter"){
+                if(MathApp.selected_block!=null){
+                        let select=MathApp.selected_block;
+                        let result="";
+                        try{
+                        result=parser.eval(select.name).toString();
+                        result.replace(" ","");
+                        }catch (e){
+                            if(result != 'function')
+                                result="error";
+                        }
+                        let size = {
+                            width : SYMBOL_WIDTH,
+                            height : SYMBOL_HEIGHT
+                        };
+                        let position = {
+                            x : Math.random() * (this.canvas.width-size.width*result.length) + size.width/2,
+                            y : Math.random() * (this.canvas.height-size.height) + size.height/2
+                        };
+                        console.log(result);
+                        if(result.includes("error")|| result.includes("Error")){
+                            result="error";
+                        }
+                        else if(result.includes("function"))
+                            result="function";
+                        if(position.x<0)
+                            position.x=0;
+                        if(position.y<0)
+                            position.y=0;
+                        let new_symbol = new MathApp.Symbol(position, size, result);
+                }
+            }
+            else if(key=="split"){
+                if(MathApp.selected_block!=null){
+                    let splitblock=MathApp.selected_block;
+                    for(let i=0; i<splitblock.name.length; i++){
+                        let size = {
+                            width : SYMBOL_WIDTH,
+                            height : SYMBOL_HEIGHT
+                        };
+                        let position = {
+                            x : splitblock.position.x + i*size.width,
+                            y : splitblock.position.y
+                        };
+                        if(position.x<0)
+                            position.x=0;
+                        if(position.y<0)
+                            position.y=0;
+                        let new_symbol = new MathApp.Symbol(position, size, splitblock.name.charAt(i));
+                    }
+                    MathApp.Block.prototype.destroy(MathApp.selected_block);
+                    }
+            }
+            else if (key=="delete"){
+                if(MathApp.selected_block!=null)
+                MathApp.Block.prototype.destroy(MathApp.selected_block);
+            }
+            else if (key=="paste"){
+                let size = {
+                    width : SYMBOL_WIDTH,
+                    height : SYMBOL_HEIGHT
+                };
+                let position = {
+                    x : Math.random() * (this.canvas.width-size.width*copybuffer.length) + size.width/2,
+                    y : Math.random() * (this.canvas.height-size.height) + size.height/2
+                };
+                if(position.x<0)
+                    position.x=0;
+                if(position.y<0)
+                    position.y=0;
+                let new_symbol = new MathApp.Symbol(position, size, copybuffer);
+            }
+            else if (key in this.symbol_paths) {
+                let size = {
+                    width : SYMBOL_WIDTH,
+                    height : SYMBOL_HEIGHT
+                };
+                let position = {
+                    x : Math.random() * (this.canvas.width-size.width) + size.width/2,
+                    y : Math.random() * (this.canvas.height-size.height) + size.height/2
+                };
+                if(position.x<0)
+                    position.x=0;
+                if(position.y<0)
+                    position.y=0;
+                let new_symbol = new MathApp.Symbol(position, size, key);
+            }
+        }
+
+        MathApp.handleMouseDown = function(window_p) {
+            if(MathApp.isInCanvas(window_p))
+            {
+                let canvas_p = MathApp.transformToCanvasCoords(window_p);
+
+                if( MathApp.selected_block != null )
+                {
+                    MathApp.selected_block.onDeselected();
+                    MathApp.selected_block = null;
+                }
+
+                let block = MathApp.findBlockOn(canvas_p);
+                if(block != null)
+                {
+                    MathApp.selected_block = block;
+                    MathApp.selected_block.onSelected();
+                }
+
+                MathApp.is_mouse_dragging = true;
+                MathApp.mouse_drag_prev = canvas_p;
+
+                MathApp.canvas.requestRenderAll();
+            }
+            else
+            {
+                MathApp.is_mouse_dragging = false;
+                MathApp.mouse_drag_prev = {x:0, y:0};
+            }
+        }
+
+        MathApp.handleMouseMove = function(window_p) {
+            if(MathApp.is_mouse_dragging)
+            {
+                let canvas_p = MathApp.transformToCanvasCoords(window_p);
+                if(MathApp.selected_block != null)
+                {
+                    let tx = canvas_p.x - MathApp.mouse_drag_prev.x;
+                    let ty = canvas_p.y - MathApp.mouse_drag_prev.y;
+                    MathApp.selected_block.translate({x: tx, y: ty});
+                }
+                MathApp.mouse_drag_prev = canvas_p;
+
+                MathApp.canvas.requestRenderAll();
+            }
+        }
+
+        MathApp.handleMouseUp = function(window_p) {
+            if(MathApp.is_mouse_dragging)
+            {
+                let block1 = MathApp.selected_block;
+                let canvas_p = MathApp.transformToCanvasCoords(window_p);
+                MathApp.is_mouse_dragging = false;
+                MathApp.mouse_drag_prev = {x:0, y:0};
+                MathApp.canvas.requestRenderAll();
+                if(block1 != null)
+                {
+                    let block2=MathApp.findBlockcrush(canvas_p, block1);
+                    if(block2!=null){
+                        let size = {
+                            width : SYMBOL_WIDTH,
+                            height : SYMBOL_HEIGHT
+                        };
+                        let addstring=block2.name.concat(block1.name);
+                        let position = {
+                            x : Math.random() * (this.canvas.width-size.width*addstring.length) + size.width/2,
+                            y : Math.random() * (this.canvas.height-size.height*addstring.length) + size.height/2
+                        };
+                        if(position.x<0)
+                            position.x=0;
+                        if(position.y<0)
+                            position.y=0;
+                        let new_symbol = new MathApp.Symbol(position, size, addstring);
+                        MathApp.Block.prototype.destroy(block1);
+                        MathApp.Block.prototype.destroy(block2);    
+                    }
+                }
+            }
+        }
+
+        MathApp.transformToCanvasCoords = function(window_p) {
+            let rect = MathApp.canvas.getElement().getBoundingClientRect();
+            let canvas_p = {
+                x : window_p.x - rect.left,
+                y : window_p.y - rect.top
+            };
+            return canvas_p;
+        }
+        
+        MathApp.isInCanvas = function(window_p) {
+            let rect = MathApp.canvas.getElement().getBoundingClientRect();
+            if( window_p.x >= rect.left && 
+                window_p.x < rect.left + rect.width &&
+                window_p.y >= rect.top && 
+                window_p.y < rect.top + rect.height )
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        MathApp.findBlockcrush = function(canvas_p,block1) {
+            for(let i=0; i < this.blocks.length; i++)
+            {
+                let block2 = this.blocks[i];
+                let x = block1.position.x;
+                let y = block1.position.y;
+                if( block1!=block2 &&
+                    x > block2.position.x-(block1.visual_items.length-2)*block1.size.width &&
+                    x < block2.position.x +(block2.visual_items.length-2)*block2.size.width &&
+                    y > block2.position.y - block2.size.height &&
+                    y < block2.position.y + block2.size.height
+                     )
+                {
+                    return block2;
+                }                  
+            }
+            return null;
+        }
+
+        MathApp.findBlockOn = function(canvas_p) {
+            let x = canvas_p.x;
+            let y = canvas_p.y;
+
+            for(let i=0; i < this.blocks.length; i++)
+            {
+                let block = this.blocks[i];
+
+                if( x >= block.position.x - block.size.width/2 &&
+                    x <= block.position.x + (block.visual_items.length-2)*block.size.width-block.size.width/2 &&
+                    y >= block.position.y - block.size.height/2 &&
+                    y <= block.position.y + block.size.height/2 )
+                {
+                    return block;
+                }               
+            }
+            return null;
+        }
+
+        MathApp.Block = function(position, size) {
+            this.position = position;
+            this.size = size;
+            this.type = MathApp.block_types.UNDEFINED;
+            
+            this.visual_items = [];
+
+            MathApp.blocks.push(this);
+        }
+
+        MathApp.Block.prototype.onDeselected = function() {
+            this.visual_items[this.visual_items.length-1].set({
+                stroke: "rgba(0,0,255,1)"
+            });
+        }
+
+        MathApp.Block.prototype.onSelected = function() {
+            this.visual_items[this.visual_items.length-1].set({
+                stroke: "rgba(255,0,0,1)"
+            });
+
+            this.visual_items.forEach(item => {
+                MathApp.canvas.bringToFront(item);
+            });
+        }
+
+        MathApp.Block.prototype.moveTo = function(p) {
+            let tx = p.x - this.position.x;
+            let ty = p.y - this.position.y;
+
+            this.translate({x: tx, y: ty});
+        }
+
+        MathApp.Block.prototype.translate = function(v) {
+            this.position.x += v.x;
+            this.position.y += v.y;
+
+            this.visual_items.forEach(item => {
+                item.left += v.x;
+                item.top += v.y;
+            });
+        }
+
+        MathApp.Block.prototype.destroy = function(block) {
+            if(block == MathApp.selected_block)
+            {
+                MathApp.selected_block = null;
+                block.onDeselected();
+            }
+
+            block.visual_items.forEach(item => {
+                MathApp.canvas.remove(item);
+            });
+            block.visual_items = [];
+            
+            let index = MathApp.blocks.indexOf(block);
+            if(index > -1)
+            {
+                MathApp.blocks.splice(index, 1);
+            }
+        }
+        
+        MathApp.Symbol = function(position, size, name) {
+            MathApp.Block.call(this, position, size);
+            this.type = MathApp.block_types.SYMBOL;
+            this.name = name;
+            let block = this;
+            let i2 = 0;
+            for(let i=0; i<name.length; i++){
+                if (name.charAt(i) in MathApp.symbol_paths) 
+                {
+                    let path = MathApp.symbol_paths[name.charAt(i)] + ".jpg";
+                    fabric.Image.fromURL(path, function(img) {
+                        // (0) Background
+                        let background = new fabric.Rect({
+                            left: position.x - size.width/2,
+                            top: position.y - size.height/2,
+                            width: size.width*name.length,
+                            height: size.height,
+                            fill: "rgba(255,255,255,1)",
+                            stroke: "rgba(0,0,0,0)",
+                            selectable: false
+                        });
+                        // (1) Image
+                        img.scaleToWidth(size.width);
+                        img.scaleToHeight(size.height);
+
+                        let img_w = img.getScaledWidth();
+                        let img_h = img.getScaledHeight();
+
+                        img.set({
+                            left: position.x - (img_w/2)+i*50,
+                            top: position.y - img_h/2,
+                            selectable: false
+                        });
+
+                        // (2) Boundary
+                        let boundary = new fabric.Rect({
+                            left: position.x - size.width/2,
+                            top: position.y - size.height/2,
+                            width: size.width*name.length,
+                            height: size.height,
+                            fill: "rgba(0,0,0,0)",
+                            stroke: "rgba(0,0,255,1)",
+                            strokeWidth: 5,
+                            selectable: false
+                        });
+
+                        //
+                        if(i2==0) {
+                            MathApp.canvas.add(background);
+                            block.visual_items.push(background);
+                        }                       
+                        MathApp.canvas.add(img);
+                        block.visual_items.push(img);
+                        if(i2==name.length-1){
+                            MathApp.canvas.add(boundary);
+                            block.visual_items.push(boundary);
+                        }
+                        i2++;
+                    });
+                }
+            }
+        }
+        
+
+        MathApp.Symbol.prototype = Object.create(MathApp.Block.prototype);
+        
+
+        //
+        $(document).ready(function() {
+            MathApp.initialize();
+        });
+    </script>
+    
+</body>
+</html>
+
